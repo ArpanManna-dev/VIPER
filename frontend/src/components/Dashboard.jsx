@@ -16,6 +16,7 @@ import SeverityTally from '@/components/SeverityTally'
 import ChainDiscovery from '@/components/ChainDiscovery'
 import BeforeAfterView from '@/components/BeforeAfterView'
 import ReportView from '@/components/ReportView'
+import BattleVisual from '@/components/BattleVisual'
 import { cn } from '@/lib/utils'
 
 const PHASE_LABEL = { profile: 'Profiling', attack: 'Attacking', validate: 'Validating', done: 'Complete' }
@@ -161,6 +162,7 @@ export default function Dashboard() {
                   <AgentFeed events={redEvents} agentType="red" title="Red Agent" active />
                   <AgentFeed events={blueEvents} agentType="blue" title="Blue Agent" active={false} />
                 </div>
+                <BattleVisual redEvents={redEvents} blueEvents={blueEvents} findings={findings} patchByFinding={patchByFinding} />
               </>
             )}
 
@@ -172,6 +174,7 @@ export default function Dashboard() {
                   <AgentFeed events={redEvents} agentType="red" title="Red Agent" active />
                   <AgentFeed events={blueEvents} agentType="blue" title="Blue Agent" active={blueEvents.length > 0} />
                 </div>
+                <BattleVisual redEvents={redEvents} blueEvents={blueEvents} findings={findings} patchByFinding={patchByFinding} />
               </>
             )}
 
@@ -189,6 +192,7 @@ export default function Dashboard() {
                   <AgentFeed events={redEvents} agentType="red" title="Red Agent" active />
                   <AgentFeed events={blueEvents} agentType="blue" title="Blue Agent" active />
                 </div>
+                <BattleVisual redEvents={redEvents} blueEvents={blueEvents} findings={findings} patchByFinding={patchByFinding} />
               </>
             )}
           </>

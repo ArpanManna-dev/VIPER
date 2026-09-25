@@ -10,6 +10,7 @@ export default {
         medium:   '#eab308',
         success:  '#22c55e',
         chain:    '#a855f7',
+        blue:     '#3b82f6',
 
         // shadcn/ui theme slots (channel triplets defined in src/styles/index.css)
         // — every ui/*.jsx primitive (Table, Tabs, Tooltip, Badge, Card, Button,

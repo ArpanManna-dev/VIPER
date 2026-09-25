@@ -6,8 +6,7 @@
  *   title:     string displayed in header
  *   active:    boolean — whether this agent is currently running
  *
- * Red feed: critical (red) accent. Blue feed: success (green) accent — the
- * project's severity/brand tokens read naturally as "red team" / "defender".
+ * Red feed: critical (red) accent. Blue feed: blue accent, matching its name.
  * Each new line fades/slides in (framer-motion) rather than a full
  * character-by-character typewriter, per the stub's CSS-animation fallback.
  * Auto-scrolls to latest event. Animated cursor while active=true.
@@ -18,7 +17,7 @@ import { cn } from '@/lib/utils'
 
 const ACCENT = {
   red:  { text: 'text-critical', border: 'border-critical/30', dot: 'bg-critical' },
-  blue: { text: 'text-success',  border: 'border-success/30',  dot: 'bg-success' },
+  blue: { text: 'text-blue',     border: 'border-blue/30',     dot: 'bg-blue' },
 }
 
 function formatEvent(event) {
