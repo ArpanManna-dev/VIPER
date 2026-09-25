@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import StatusBadge from '@/components/StatusBadge'
 import { getReport } from '@/api/client'
 
+const SEVERITY_RANK = { critical: 0, high: 1, medium: 2 }
+
 const SUMMARY_CARDS = [
   { key: 'total_attacks', label: 'Total Attacks' },
   { key: 'critical', label: 'Critical' },
@@ -58,6 +60,9 @@ export default function ReportView({ report, sessionId }) {
   if (!report) return null
 
   const patchByFinding = Object.fromEntries(report.patches.map(p => [p.finding_id, p]))
+  const rankedFindings = [...report.findings].sort(
+    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+  )
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -94,8 +99,8 @@ export default function ReportView({ report, sessionId }) {
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">Findings</h3>
-        {report.findings.map((finding, i) => (
+        <h3 className="text-sm font-semibold text-muted-foreground">Findings (ranked by severity)</h3>
+        {rankedFindings.map((finding, i) => (
           <FindingCard key={finding.id} finding={finding} patch={patchByFinding[finding.id]} index={i} />
         ))}
       </div>

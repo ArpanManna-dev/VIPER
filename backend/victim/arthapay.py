@@ -1,6 +1,7 @@
 """
 Mock ArthaPay banking chatbot — calls Gemini with vulnerable system prompt.
 """
+import asyncio
 from google import genai
 from google.genai import types
 from backend.config import get_config
@@ -19,15 +20,19 @@ async def respond(
     """
     config = get_config()
     system_prompt = get_sandboxed_prompt(patch or "") if use_sandboxed else get_system_prompt()
+    await asyncio.sleep(config.request_delay_ms / 1000)
 
     try:
         client = genai.Client(api_key=config.gemini_api_key)
-        response = await client.aio.models.generate_content(
-            model=config.victim_model,
-            contents=message,
-            config=types.GenerateContentConfig(system_instruction=system_prompt),
+        response = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=config.victim_model,
+                contents=message,
+                config=types.GenerateContentConfig(system_instruction=system_prompt),
+            ),
+            timeout=30,
         )
-        return response.text
+        return response.text or "[ArthaPay error] Empty response (likely filtered)."
     except Exception as e:
         return f"[ArthaPay error] Unable to process your request right now: {e}"
 

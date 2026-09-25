@@ -62,6 +62,10 @@ export default function Dashboard() {
     start, reset, error, addFinding, addChain, addPatch,
   } = useAuditSession()
   const { redEvents, blueEvents, chainEvents, phase, complete } = useAuditStream(session?.session_id)
+  // session:complete never arrives with its own phase:change('done') — complete is the
+  // authoritative terminal signal (see mocks/sse_events.jsonl), so derive the displayed
+  // phase from it rather than waiting on a phase value that will never come.
+  const displayPhase = complete ? 'done' : phase
 
   const [profile, setProfile] = useState(null)
   const [report, setReport] = useState(null)
@@ -125,8 +129,8 @@ export default function Dashboard() {
           </div>
           {session && (
             <div className="flex items-center gap-3">
-              <span className={cn('rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-wide', PHASE_CLASS[phase])}>
-                {PHASE_LABEL[phase] ?? phase}
+              <span className={cn('rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-wide', PHASE_CLASS[displayPhase])}>
+                {PHASE_LABEL[displayPhase] ?? displayPhase}
               </span>
               <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                 <Clock className="size-3.5" />{formatElapsed(elapsed)}
@@ -148,7 +152,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {session && phase !== 'done' && (
+        {session && !complete && (
           <>
             {phase === 'profile' && (
               <>
@@ -190,8 +194,8 @@ export default function Dashboard() {
           </>
         )}
 
-        {session && phase === 'done' && (
-          <Tabs defaultValue="attack">
+        {session && complete && (
+          <Tabs defaultValue="report">
             <TabsList>
               <TabsTrigger value="attack">Attack View</TabsTrigger>
               <TabsTrigger value="report">Report</TabsTrigger>
