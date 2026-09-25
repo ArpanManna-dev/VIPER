@@ -1,0 +1,409 @@
+openapi: "3.0.3"
+info:
+  title: VIPER API
+  description: Vulnerability Injection Prober for Enterprise Responses
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+paths:
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /audit/start:
+    post:
+      summary: Start a new dual-agent audit session
+      description: >
+        Creates a new session and immediately launches the Red Agent and Blue Agent
+        as concurrent background tasks. Returns the session object. Client should
+        then open the SSE stream at /audit/stream/{session_id}.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_url]
+              properties:
+                target_url:
+                  type: string
+                  description: URL of the victim chatbot endpoint
+                  example: "http://localhost:8000/chatbot/message"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSession'
+        "422":
+          description: Invalid target URL
+
+  /audit/stream/{session_id}:
+    get:
+      summary: SSE stream of live dual-agent events
+      description: >
+        Server-Sent Events stream. Events have a type and JSON data payload.
+        Stream closes after session:complete event is sent.
+        Event types: red:reasoning, red:probe, red:profile_complete, red:attack,
+        red:finding, red:retest, red:retest_result, blue:reasoning, blue:analyzing,
+        blue:patch_generated, blue:validation, blue:validation_result,
+        chain:discovered, phase:change, session:complete
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SSEEvent'
+        "404":
+          description: Session not found
+
+  /audit/status/{session_id}:
+    get:
+      summary: Current status snapshot of an audit session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditStatus'
+        "404":
+          description: Session not found
+
+  /chatbot/message:
+    post:
+      summary: Send a message directly to the ArthaPay victim chatbot
+      description: Used for manual testing and demo. Does not affect any audit session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  example: "What is my account balance?"
+                use_sandboxed:
+                  type: boolean
+                  default: false
+                  description: If true, uses the patched (sandboxed) version
+                patch:
+                  type: string
+                  nullable: true
+                  description: Patch fragment to apply when use_sandboxed is true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+
+  /report/{session_id}:
+    get:
+      summary: Get the full vulnerability report for a completed session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityReport'
+        "404":
+          description: Session not found
+        "409":
+          description: Session not yet complete
+
+components:
+  schemas:
+
+    AuditSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+          example: "vpr_a1b2c3d4"
+        target_url:
+          type: string
+        status:
+          type: string
+          enum: [profiling, attacking, validating, complete, failed]
+        phase:
+          type: string
+          enum: [profile, attack, validate, done]
+        findings_count:
+          type: integer
+        chains_count:
+          type: integer
+        patches_count:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AuditStatus:
+      type: object
+      properties:
+        session_id:
+          type: string
+        status:
+          type: string
+          enum: [profiling, attacking, validating, complete, failed]
+        phase:
+          type: string
+        probes_sent:
+          type: integer
+        attacks_launched:
+          type: integer
+        findings_count:
+          type: integer
+        chains_count:
+          type: integer
+        patches_validated:
+          type: integer
+        elapsed_seconds:
+          type: integer
+
+    SSEEvent:
+      type: object
+      description: >
+        All SSE events have this shape. The 'type' field determines the
+        structure of 'data'. See docs/AGENT_DESIGN.md for full event catalogue.
+      properties:
+        type:
+          type: string
+          enum:
+            - red:reasoning
+            - red:probe
+            - red:profile_complete
+            - red:attack
+            - red:finding
+            - red:retest
+            - red:retest_result
+            - blue:reasoning
+            - blue:analyzing
+            - blue:patch_generated
+            - blue:validation
+            - blue:validation_result
+            - chain:discovered
+            - phase:change
+            - session:complete
+        data:
+          type: object
+          description: Payload varies by event type — see mocks/sse_events.jsonl
+
+    ChatbotProfile:
+      type: object
+      properties:
+        domain:
+          type: string
+          example: "banking"
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ["balance inquiry", "UPI transfer", "transaction history"]
+        verification_steps:
+          type: array
+          items:
+            type: string
+          example: ["OTP verification", "account number confirmation"]
+        tone:
+          type: string
+          example: "formal and deferential"
+        hypothesized_vulnerabilities:
+          type: array
+          items:
+            type: string
+          example: ["authority injection", "context confusion via user fields"]
+        raw_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProbeResult'
+
+    ProbeResult:
+      type: object
+      properties:
+        probe_message:
+          type: string
+        response:
+          type: string
+        observations:
+          type: array
+          items:
+            type: string
+
+    Finding:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          example: "Role Hijacking"
+        payload:
+          type: string
+          description: The exact payload that produced this finding (AI-generated, not from a library)
+        chatbot_response:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium]
+        hypothesis:
+          type: string
+          description: Why the Red Agent believed this attack would work (from profiling)
+        consequence:
+          type: string
+          description: What a real attacker could achieve with this vulnerability
+        detected_at:
+          type: string
+          format: date-time
+        validated:
+          type: boolean
+          description: True if Blue Agent has confirmed fix and retested
+        patch_id:
+          type: string
+          nullable: true
+
+    ChainFinding:
+      type: object
+      properties:
+        id:
+          type: integer
+        finding_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of individual findings that form this chain
+        combined_severity:
+          type: string
+          enum: [critical, high]
+        description:
+          type: string
+          description: How these findings chain together
+        consequence:
+          type: string
+          description: What a real attacker achieves by chaining these
+
+    Patch:
+      type: object
+      properties:
+        id:
+          type: string
+        finding_id:
+          type: integer
+        root_cause:
+          type: string
+          description: Why the system prompt was vulnerable (Blue Agent analysis)
+        patch_description:
+          type: string
+          description: Plain English description of the fix
+        original_prompt_fragment:
+          type: string
+          description: The vulnerable portion of the system prompt
+        patched_prompt_fragment:
+          type: string
+          description: The fixed replacement
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Blue Agent confidence that this patch fully closes the vulnerability
+        validated:
+          type: boolean
+        retest_result:
+          type: string
+          enum: [fixed, still_vulnerable, degraded]
+          nullable: true
+          description: >
+            fixed = attack fails after patch.
+            still_vulnerable = attack still succeeds.
+            degraded = patch broke normal chatbot functionality.
+
+    ReportSummary:
+      type: object
+      properties:
+        total_probes:
+          type: integer
+        total_attacks:
+          type: integer
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+        chains_discovered:
+          type: integer
+        patches_generated:
+          type: integer
+        patches_validated:
+          type: integer
+        duration_seconds:
+          type: integer
+
+    VulnerabilityReport:
+      type: object
+      properties:
+        session_id:
+          type: string
+        target:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        profile:
+          $ref: '#/components/schemas/ChatbotProfile'
+        summary:
+          $ref: '#/components/schemas/ReportSummary'
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Finding'
+        chains:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChainFinding'
+        patches:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patch'
