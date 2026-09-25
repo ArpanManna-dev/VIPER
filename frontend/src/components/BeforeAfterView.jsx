@@ -22,6 +22,17 @@ const RETEST_CLASS = {
   degraded: 'bg-medium/10 text-medium border-medium/40',
 }
 
+function DiffLine({ sign, text, tone }) {
+  const toneClass = tone === 'removed'
+    ? 'bg-critical/5 text-critical/90'
+    : 'bg-success/5 text-success/90'
+  return (
+    <p className={cn('whitespace-pre-wrap break-words rounded px-2 py-1 font-mono text-xs', toneClass)}>
+      <span className="mr-1.5 select-none opacity-70">{sign}</span>{text}
+    </p>
+  )
+}
+
 function Panel({ tone, label, payload, response }) {
   const toneClass = tone === 'before'
     ? 'border-critical/30 bg-critical/5'
@@ -73,6 +84,20 @@ export default function BeforeAfterView({ finding, patch }) {
           />
         </motion.div>
       </div>
+
+      {(patch.original_prompt_fragment || patch.patched_prompt_fragment) && (
+        <div className="mt-3 space-y-1 border-t border-border pt-3">
+          <h4 className="mb-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+            System prompt patch
+          </h4>
+          {patch.original_prompt_fragment && (
+            <DiffLine sign="−" tone="removed" text={patch.original_prompt_fragment} />
+          )}
+          {patch.patched_prompt_fragment && (
+            <DiffLine sign="+" tone="added" text={patch.patched_prompt_fragment} />
+          )}
+        </div>
+      )}
     </div>
   )
 }
