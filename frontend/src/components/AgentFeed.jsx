@@ -16,8 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 const ACCENT = {
-  red:  { text: 'text-critical', border: 'border-critical/30', dot: 'bg-critical' },
-  blue: { text: 'text-blue',     border: 'border-blue/30',     dot: 'bg-blue' },
+  red:  { text: 'text-critical', dot: 'bg-critical' },
+  blue: { text: 'text-blue',     dot: 'bg-blue' },
 }
 
 function formatEvent(event) {
@@ -61,10 +61,10 @@ export default function AgentFeed({ events, agentType, title, active }) {
   }, [events])
 
   return (
-    <div className={cn('flex h-80 flex-col rounded-lg border bg-card', accent.border)}>
+    <div className="flex h-80 flex-col rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
         <span className={cn('size-2 rounded-full', accent.dot, active && 'animate-pulse-slow')} />
-        <h3 className={cn('font-mono text-xs font-semibold uppercase tracking-wide', accent.text)}>
+        <h3 className={cn('text-xs font-semibold uppercase tracking-wide', accent.text)}>
           {title}
         </h3>
       </div>

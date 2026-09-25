@@ -51,6 +51,7 @@ export default {
         ring: 'hsl(var(--ring) / <alpha-value>)',
       },
       fontFamily: {
+        sans: ["'Geist Variable'", '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'sans-serif'],
         mono: ["'Fira Code'", "'JetBrains Mono'", 'monospace'],
       },
       keyframes: {

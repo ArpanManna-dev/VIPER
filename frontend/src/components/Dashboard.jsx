@@ -4,7 +4,6 @@
  */
 import { useEffect, useState } from 'react'
 import { ShieldAlert, Clock } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useAuditSession } from '@/hooks/useAuditSession'
 import { useAuditStream } from '@/hooks/useAuditStream'
 import { getReport } from '@/api/client'
@@ -28,11 +27,12 @@ const PHASE_CLASS = {
 }
 
 function BackgroundBeams() {
+  // A single, static, very low-opacity ambient gradient — enough to keep the
+  // page from feeling flat, without competing for attention against the
+  // real data. No color-cycling, no pulse.
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute left-1/4 top-0 size-[36rem] rounded-full bg-[radial-gradient(circle,theme(colors.primary.DEFAULT)_0%,transparent_70%)] opacity-20 blur-3xl animate-pulse-slow" />
-      <div className="absolute right-0 top-1/3 size-[30rem] rounded-full bg-[radial-gradient(circle,theme(colors.critical)_0%,transparent_70%)] opacity-10 blur-3xl animate-pulse-slow" />
-      <div className="absolute bottom-0 left-1/3 size-[30rem] rounded-full bg-[radial-gradient(circle,theme(colors.success)_0%,transparent_70%)] opacity-10 blur-3xl animate-pulse-slow" />
+      <div className="absolute left-1/2 top-0 size-[42rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,theme(colors.primary.DEFAULT)_0%,transparent_70%)] opacity-[0.06] blur-3xl" />
     </div>
   )
 }
@@ -199,25 +199,26 @@ export default function Dashboard() {
         )}
 
         {session && complete && (
-          <Tabs defaultValue="report">
-            <TabsList>
-              <TabsTrigger value="attack">Attack View</TabsTrigger>
-              <TabsTrigger value="report">Report</TabsTrigger>
-            </TabsList>
-            <TabsContent value="attack" className="space-y-6 pt-4">
-              <SeverityTally counts={severityCount} />
-              <AttackTable findings={findings} />
-              <ChainDiscovery chains={chains} />
-              <div className="space-y-3">
-                {findings.map(f => (
-                  <BeforeAfterView key={f.id} finding={f} patch={patchByFinding[f.id]} />
-                ))}
+          <div className="space-y-8">
+            <ReportView report={report} sessionId={session.session_id} />
+
+            <details className="group rounded-lg border border-border">
+              <summary className="cursor-pointer select-none list-none px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <span className="mr-1.5 inline-block transition-transform group-open:rotate-90">›</span>
+                Attack details
+              </summary>
+              <div className="space-y-6 border-t border-border px-4 py-4">
+                <SeverityTally counts={severityCount} />
+                <AttackTable findings={findings} />
+                <ChainDiscovery chains={chains} />
+                <div className="space-y-3">
+                  {findings.map(f => (
+                    <BeforeAfterView key={f.id} finding={f} patch={patchByFinding[f.id]} />
+                  ))}
+                </div>
               </div>
-            </TabsContent>
-            <TabsContent value="report" className="pt-4">
-              <ReportView report={report} sessionId={session.session_id} />
-            </TabsContent>
-          </Tabs>
+            </details>
+          </div>
         )}
 
         {session && (
